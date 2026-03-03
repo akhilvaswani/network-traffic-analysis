@@ -1,0 +1,5 @@
+# Wireshark
+*.pcap
+*.pcapng
+.env
+*.log
