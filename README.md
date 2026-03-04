@@ -1,8 +1,6 @@
 # Network Traffic Analysis with Wireshark
 
-In this project, I set up a cloud environment to capture and analyze network traffic using Wireshark. I walked through different types of traffic - ICMP, SSH, DNS, HTTP, and RDP - and used filters to isolate and understand each protocol.
-
-This is a foundational skill for IT and cybersecurity - being able to look at raw network traffic and understand what's happening on the wire.
+I set up a couple VMs in Azure and used Wireshark to capture and analyze network traffic. Went through ICMP, SSH, DNS, HTTP, and RDP - filtering each one to see what it actually looks like on the wire.
 
 ## Environments and Technologies Used
 
@@ -106,10 +104,10 @@ To test how Azure's firewall works, I went to the Azure portal and added an inbo
 
 After removing the block rule, pings started working again immediately.
 
-## Key Takeaways
+## What I Took Away From This
 
-- Wireshark is incredibly powerful for understanding what's actually happening on a network
-- Encrypted protocols (SSH, HTTPS) protect the payload but you can still see connection metadata
-- DNS queries are unencrypted by default, which is something to be aware of from a security perspective
-- Azure NSGs work at the network level and immediately affect traffic flow when rules change
-- Understanding these protocols is essential for troubleshooting network issues and security analysis
+- Wireshark shows you a lot once you know what to filter for
+- Even with encrypted protocols (SSH, HTTPS), you can still see connection metadata
+- DNS queries are unencrypted by default, which is worth knowing from a security standpoint
+- Azure NSGs kick in immediately when you change the rules - traffic stops right away
+- Solid foundation for actual network troubleshooting on the job
