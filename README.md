@@ -1,113 +1,32 @@
-# Network Traffic Analysis with Wireshark
+# Network Traffic Analysis
 
-I set up a couple VMs in Azure and used Wireshark to capture and analyze network traffic. Went through ICMP, SSH, DNS, HTTP, and RDP - filtering each one to see what it actually looks like on the wire.
+Set up two VMs in Azure (Windows 10 + Ubuntu Server) on the same virtual network and used Wireshark to capture and analyze different types of network traffic. Went through ICMP, SSH, DNS, HTTP/HTTPS, and RDP to see what each protocol actually looks like on the wire.
 
-## Environments and Technologies Used
+## Setup
 
-- Microsoft Azure (Virtual Machines, Virtual Networks)
-- Wireshark (network protocol analyzer)
-- Command line tools (ping, nslookup, ipconfig, ssh)
-- Windows 10 Pro and Ubuntu Server
+- VM1 (Windows 10) -- ran Wireshark here to do the captures
+- VM2 (Ubuntu Server) -- target machine for pings, SSH, etc.
+- Both on the same Azure subnet so traffic stayed local
 
-## Operating Systems Used
+## What I looked at
 
-- Windows 10 (running Wireshark)
-- Ubuntu Server 22.04 (target machine for SSH traffic)
+**ICMP (ping)** -- Pinged VM2 from VM1 and watched the echo request/reply pairs in Wireshark. Also pinged google.com to compare -- local pings were under 1ms, external were around 10-15ms.
 
-## Steps
+**SSH** -- SSH'd into VM2 and filtered on `tcp.port == 22`. You can see the TCP handshake and key exchange but the actual data shows up as "Encrypted packet" which is expected.
 
-### 1 - Set Up the Environment
+**DNS** -- Used `nslookup` to query a few domains and filtered on `dns`. Could see the full query/response -- the request going out asking for an IP and the A record coming back.
 
-I created two VMs in the same Azure Virtual Network:
+**HTTP/HTTPS** -- Browsed some websites and filtered on ports 80 and 443. Most traffic these days is HTTPS so the payload is encrypted, but you can still see the TLS handshake and the SNI field showing which domain was requested.
 
-- **VM1 (Windows 10)** - This is where I installed Wireshark and did the capturing
-- **VM2 (Ubuntu Server)** - This was the target machine I communicated with
+**RDP** -- Since I was connected via RDP, that traffic was already there. Filtered on `tcp.port == 3389`. RDP generates a constant stream of packets even when you're not doing anything because it's always updating the display.
 
-Both VMs were on the same subnet so I could capture traffic between them without any routing complications.
+## NSG testing
 
-### 2 - Install Wireshark
+Also tested Azure's Network Security Group by adding a rule to block ICMP on VM2. Pings immediately started timing out -- in Wireshark I could see the requests going out but no replies coming back. Removed the rule and it started working again right away. Pretty cool to see the firewall take effect in real time.
 
-After connecting to VM1 via Remote Desktop, I downloaded and installed Wireshark from [wireshark.org](https://www.wireshark.org). During installation I made sure to include the Npcap packet capture driver - Wireshark needs this to actually see the network traffic.
+## Takeaways
 
-### 3 - Capture ICMP Traffic (Ping)
-
-I started a capture in Wireshark and then opened a Command Prompt to ping VM2's private IP:
-
-```
-ping 10.0.0.5
-```
-
-In Wireshark, I filtered for ICMP traffic only:
-
-```
-icmp
-```
-
-I could see the Echo Request going from VM1 to VM2, and the Echo Reply coming back. Each packet showed the source IP, destination IP, and the payload. I also pinged a public address (google.com) to see the difference in response times - local pings were under 1ms while external pings were around 10-15ms.
-
-### 4 - Capture SSH Traffic
-
-Next I SSH'd into VM2 from VM1 to generate some encrypted traffic:
-
-```
-ssh adminuser@10.0.0.5
-```
-
-In Wireshark, I filtered for SSH:
-
-```
-tcp.port == 22
-```
-
-The interesting thing here is that you can see the TCP handshake and the SSH key exchange, but the actual data is encrypted. All Wireshark shows is "Encrypted packet" for the payload - which is exactly what you'd expect from SSH.
-
-### 5 - Capture DNS Traffic
-
-I used `nslookup` to generate DNS queries:
-
-```
-nslookup google.com
-nslookup amazon.com
-```
-
-With the DNS filter in Wireshark:
-
-```
-dns
-```
-
-I could see the full DNS resolution process - the query going out to the DNS server asking "what's the IP for google.com?" and the response coming back with the A record. Each query-response pair was clearly visible.
-
-### 6 - Capture HTTP/HTTPS Traffic
-
-I opened a web browser on VM1 and visited a few websites. In Wireshark:
-
-```
-tcp.port == 80 || tcp.port == 443
-```
-
-Most modern traffic is HTTPS (port 443), so like SSH, the payload is encrypted. But you can still see the TLS handshake, the SNI (Server Name Indication) showing which domain was requested, and the overall flow of the connection.
-
-### 7 - Observe RDP Traffic
-
-Since I was connected to VM1 via RDP, that traffic was already flowing. I filtered for it:
-
-```
-tcp.port == 3389
-```
-
-RDP generates a constant stream of traffic because it's sending the desktop display in real time. Even when I wasn't doing anything, there was a steady flow of packets - this is normal for RDP since it needs to keep the session alive.
-
-### 8 - Network Security Group Rules
-
-To test how Azure's firewall works, I went to the Azure portal and added an inbound rule on VM2's NSG to block ICMP traffic. Then I tried pinging VM2 again - the requests timed out, and in Wireshark I could see the Echo Requests going out but no Echo Replies coming back.
-
-After removing the block rule, pings started working again immediately.
-
-## What I Took Away From This
-
-- Wireshark shows you a lot once you know what to filter for
-- Even with encrypted protocols (SSH, HTTPS), you can still see connection metadata
-- DNS queries are unencrypted by default, which is worth knowing from a security standpoint
-- Azure NSGs kick in immediately when you change the rules - traffic stops right away
-- Solid foundation for actual network troubleshooting on the job
+- Wireshark is a lot more useful once you know what filters to use
+- Even encrypted protocols (SSH, HTTPS) expose connection metadata
+- DNS queries are unencrypted by default which is worth knowing
+- Azure NSG rule changes take effect immediately
